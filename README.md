@@ -21,7 +21,6 @@ Chat with mentor-style AI personas, switch between light/dark mode, and pick up 
 - ✍️ **Animated username** — types in letter-by-letter in the navbar, holds, then deletes and loops
 - 🧑‍🏫 **Persona tab** — persona cards displayed in a "pinned to a corkboard" zigzag layout
 - 👤 **Profile tab** — shows the signed-in user's basic info
-- 🧩 **shadcn/ui-style components** — Button, Card, Input, Label, Tabs, Avatar (built on Radix UI primitives)
 - 🗄️ **MongoDB-backed persistence** — users and conversations are stored per account
 
 ---
@@ -170,19 +169,6 @@ Open [http://localhost:3000](http://localhost:3000) — you'll land on `/login`.
 npm run build
 npm run start
 ```
-
----
-
-## 🌐 Deploying
-
-This app works out of the box on **[Vercel](https://vercel.com)**:
-
-1. Push this repo to GitHub.
-2. Import the repo into Vercel.
-3. Add the same environment variables from `.env.local` in **Project Settings → Environment Variables**.
-4. Deploy.
-
-> ⚠️ Make sure your MongoDB Atlas cluster's **Network Access** allows connections from Vercel (either `0.0.0.0/0` for simplicity, or Vercel's specific IP ranges for tighter security).
 
 ---
 
