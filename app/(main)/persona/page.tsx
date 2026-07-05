@@ -8,26 +8,26 @@ import { useEffect } from "react";
 const PERSONAS = [
   {
     name: "Hitesh Chaudhary",
-    description: "Breaks down complex topics into simple, friendly explanations.",
+    description: "Persona AI of Hitesh Sir.",
     icon: GraduationCap,
     tilt: "-3deg",
   },
   {
-    name: "Sage the Strategist",
-    description: "Helps you think through decisions with structured, calm advice.",
-    icon: Briefcase,
+    name: "Piyush Garg",
+    description: "Persona AI of Piyush Sir.",
+    icon: Bot,
     tilt: "2.5deg",
   },
   {
-    name: "Muse the Creative",
+    name: "Upcoming Persona",
     description: "Brainstorms ideas, stories, and creative writing with you.",
     icon: Palette,
     tilt: "-2deg",
   },
   {
-    name: "Byte the Assistant",
+    name: "Upcoming Persona",
     description: "A practical everyday helper for tasks, code, and quick answers.",
-    icon: Bot,
+    icon: Briefcase,
     tilt: "3deg",
   },
 ];

@@ -1,85 +1,336 @@
-# Persona Chat
+# 🧠 Persona Chat
 
-A persona-based AI chat app built with Next.js (App Router), Tailwind CSS, shadcn-style components, MongoDB, and the OpenAI (ChatGPT) API.
+A persona-based AI chat application built with **Next.js 14 (App Router)**, **Tailwind CSS**, **shadcn/ui-style components**, **MongoDB**, and the **OpenAI (ChatGPT) API**.
 
-## Features
+Chat with mentor-style AI personas, switch between light/dark mode, and pick up right where you left off with a smart, grouped conversation history panel.
 
-- **Email/password auth** with hashed passwords (bcrypt) and JWT session cookies
-- **Chat interface** with hardcoded quick-start questions, streaming-style message bubbles, and per-user conversation history stored in MongoDB
-- **History side panel** with a collapse/expand toggle, grouped into **Today / Yesterday / Last Week / Older**, shown in a zigzag (alternating left/right) layout
-- **Dark & light mode** via `next-themes`
-- **Orange primary theme**, fully driven by CSS variables (easy to re-theme)
-- **Animated name** in the top-left of the navbar: types out the signed-in user's name letter by letter, pauses 5 seconds, deletes it letter by letter, and loops
-- **Persona tab**: a set of persona cards laid out in a zigzag, "pinned to a wall" visual style
-- **Profile tab**: shows the signed-in user's basic info
-- Built with **shadcn/ui**-style primitives (Button, Card, Input, Label, Tabs, Avatar) on top of Radix UI
+## App link : https://persona-ai-ac83.onrender.com/login
 
-## Getting started
+## Home page
+<img src="/public/app.png"  />
 
-1. Install dependencies:
+---
 
-   ```bash
-   npm install
-   ```
+## ✨ Features
 
-2. Copy the environment file and fill in your own values:
+- 🔐 **Email/password authentication** — bcrypt-hashed passwords, JWT session cookies (httpOnly)
+- 💬 **Persona-based chatbot** — pick a mentor persona and get responses in that persona's tone
+- 🕑 **Smart history panel** — collapsible sidebar, conversations grouped into **Today / Yesterday / Last Week / Older**, laid out in a zigzag pattern
+- 🌗 **Dark & light mode** — powered by `next-themes`, toggle in the navbar
+- 🎨 **Orange-accented theme** — fully driven by CSS variables, easy to re-theme
+- ✍️ **Animated username** — types in letter-by-letter in the navbar, holds, then deletes and loops
+- 🧑‍🏫 **Persona tab** — persona cards displayed in a "pinned to a corkboard" zigzag layout
+- 👤 **Profile tab** — shows the signed-in user's basic info
+- 🧩 **shadcn/ui-style components** — Button, Card, Input, Label, Tabs, Avatar (built on Radix UI primitives)
+- 🗄️ **MongoDB-backed persistence** — users and conversations are stored per account
 
-   ```bash
-   cp .env.example .env.local
-   ```
+---
 
-   You'll need:
-   - `MONGODB_URI` — your MongoDB connection string (e.g. from MongoDB Atlas)
-   - `MONGODB_DB` — database name (defaults to `persona_chat`)
-   - `JWT_SECRET` — any long random string, used to sign session cookies
-   - `OPENAI_API_KEY` — your OpenAI API key (add this yourself; the chat route calls `https://api.openai.com/v1/chat/completions`)
-   - `OPENAI_MODEL` — optional, defaults to `gpt-4o-mini`
-
-3. Run the dev server:
-
-   ```bash
-   npm run dev
-   ```
-
-4. Open [http://localhost:3000](http://localhost:3000). You'll be redirected to `/login`. Sign up for a new account, then you'll land on `/chat`.
-
-## Project structure
+## 🧭 How It Works (App Flow)
 
 ```
-app/
-  login/              Login & sign up page
-  (main)/
-    layout.tsx        Shared navbar + auth guard for chat/persona/profile
-    chat/             Main chatbot UI + history panel
-    persona/          Persona picker (zigzag pinned cards)
-    profile/          User profile page
-  api/
-    auth/             signup, login, logout, me
-    chat/             Calls the OpenAI API, saves conversation to MongoDB
-    history/          Lists / fetches a user's conversation history
-components/
-  ui/                 shadcn-style primitives (button, card, input, label, tabs, avatar)
-  navbar.tsx          Top nav with tabs + animated name + theme toggle
-  history-panel.tsx   Collapsible, grouped, zigzag conversation history
-  animated-name.tsx   Typing/deleting name animation
-  theme-provider.tsx / theme-toggle.tsx
-lib/
-  mongodb.ts          MongoDB client singleton
-  auth.ts             JWT session helpers
-  utils.ts            cn() class merge helper
-middleware.ts         Route protection for /chat, /persona, /profile, /login
+┌─────────────┐      no session       ┌─────────────┐
+│   /  (root) │ ────────────────────▶ │   /login    │
+└─────────────┘                       └──────┬──────┘
+      │ has session                          │ sign up / sign in
+      ▼                                      ▼
+┌─────────────────────────────────────────────────────┐
+│                    (main) route group                │
+│   Navbar (animated name · tabs · theme toggle)        │
+│                                                       │
+│   /chat  ──────────  /persona  ──────────  /profile   │
+└─────────────────────────────────────────────────────┘
 ```
 
-## Notes
+1. **Landing (`/`)** checks for a valid session cookie. Logged-in users are redirected to `/chat`; everyone else goes to `/login`.
+2. **Login / Signup (`/login`)** posts to `/api/auth/login` or `/api/auth/signup`. On success, the server signs a JWT containing `{ userId, email, name }` and sets it as an httpOnly cookie. `middleware.ts` uses this cookie to gate `/chat`, `/persona`, and `/profile`.
+3. **Chat (`/chat`)**:
+   - Shows hardcoded quick-start questions when a conversation is empty.
+   - Every sent message hits `POST /api/chat`, which:
+     1. Verifies the session.
+     2. Loads any prior messages for the current `conversationId` from MongoDB.
+     3. Builds a system prompt from the active persona (or a generic assistant prompt if none is selected).
+     4. Calls the OpenAI Chat Completions API with the full message history.
+     5. Saves the updated message array back to MongoDB and returns the reply.
+   - The **History Panel** (`GET /api/history`) lists all of the user's past conversations, grouped client-side by recency, and lets you reopen any of them.
+4. **Persona (`/persona`)** shows persona cards (name, description, icon) in a zig-zag "pinned note" layout. Selecting a persona attaches it to the next conversation's system prompt.
+5. **Profile (`/profile`)** calls `GET /api/auth/me` to display the signed-in user's name and email.
+6. **Logout** clears the session cookie via `POST /api/auth/logout` and redirects to `/login`.
 
-- Passwords are hashed with bcrypt before being stored — never stored in plain text.
-- Sessions are stored in an httpOnly cookie containing a signed JWT.
-- Swap the model in `.env.local` (`OPENAI_MODEL`) to use a different ChatGPT model.
-- The color theme lives entirely in `app/globals.css` as HSL CSS variables, so you can retheme the whole app by editing `--primary` and friends.
+### Data model (MongoDB)
 
-## Ideas to extend
+| Collection      | Purpose                                                              |
+|------------------|-----------------------------------------------------------------------|
+| `users`          | `{ name, email, passwordHash, createdAt }`                           |
+| `conversations`  | `{ userId, title, messages: [{ role, content, createdAt }], createdAt, updatedAt }` |
 
-- Let users create/edit their own custom personas (name, description, avatar) and store them in MongoDB.
-- Stream chat responses token-by-token using the OpenAI streaming API.
-- Add a "delete conversation" action in the history panel.
-- Add avatar image upload on the profile page.
+All conversation reads/writes are scoped to `userId`, so users only ever see their own history.
+
+---
+
+## 🗂️ Project Structure
+
+```
+persona-chat/
+├── app/
+│   ├── page.tsx                  # Root: redirects based on session
+│   ├── layout.tsx                # Root layout + ThemeProvider
+│   ├── globals.css               # Orange theme variables, animations
+│   ├── login/
+│   │   └── page.tsx              # Login / signup UI
+│   ├── (main)/
+│   │   ├── layout.tsx            # Shared navbar + auth guard
+│   │   ├── chat/page.tsx         # Chatbot UI + quick questions
+│   │   ├── persona/page.tsx      # Persona picker (zigzag pinned cards)
+│   │   └── profile/page.tsx      # User profile
+│   └── api/
+│       ├── auth/
+│       │   ├── signup/route.ts
+│       │   ├── login/route.ts
+│       │   ├── logout/route.ts
+│       │   └── me/route.ts
+│       ├── chat/route.ts         # Calls OpenAI API, saves to MongoDB
+│       └── history/route.ts      # Lists / fetches conversation history
+├── components/
+│   ├── ui/                       # shadcn-style primitives
+│   ├── navbar.tsx
+│   ├── history-panel.tsx
+│   ├── animated-name.tsx
+│   ├── theme-provider.tsx
+│   └── theme-toggle.tsx
+├── lib/
+│   ├── mongodb.ts                # MongoDB client singleton
+│   ├── auth.ts                   # JWT session helpers
+│   └── utils.ts                  # cn() class-merge helper
+├── middleware.ts                 # Route protection
+├── .env.example
+├── package.json
+└── tailwind.config.ts
+```
+
+---
+
+## 🚀 Getting Started (Clone & Run Locally)
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/<your-username>/persona-chat.git
+cd persona-chat
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Set up environment variables
+
+Copy the example file:
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in `.env.local`:
+
+```env
+# MongoDB
+MONGODB_URI=your_mongodb_connection_string_here
+MONGODB_DB=persona_chat
+
+# Auth
+JWT_SECRET=replace_with_a_long_random_string
+
+# OpenAI (ChatGPT API)
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4o-mini
+```
+
+| Variable         | Where to get it                                                                 |
+|------------------|------------------------------------------------------------------------------------|
+| `MONGODB_URI`    | [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) → Connect → Drivers          |
+| `MONGODB_DB`     | Any name you like (defaults to `persona_chat`)                                    |
+| `JWT_SECRET`     | Any long random string, e.g. `openssl rand -base64 32`                            |
+| `OPENAI_API_KEY` | [OpenAI Platform](https://platform.openai.com/api-keys) → Create new secret key   |
+| `OPENAI_MODEL`   | Optional — defaults to `gpt-4o-mini`                                               |
+
+### 4. Run the development server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) — you'll land on `/login`. Sign up, and you'll be taken to `/chat`.
+
+### 5. Build for production
+
+```bash
+npm run build
+npm run start
+```
+
+---
+
+## 🌐 Deploying
+
+This app works out of the box on **[Vercel](https://vercel.com)**:
+
+1. Push this repo to GitHub.
+2. Import the repo into Vercel.
+3. Add the same environment variables from `.env.local` in **Project Settings → Environment Variables**.
+4. Deploy.
+
+> ⚠️ Make sure your MongoDB Atlas cluster's **Network Access** allows connections from Vercel (either `0.0.0.0/0` for simplicity, or Vercel's specific IP ranges for tighter security).
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer          | Technology                                   |
+|----------------|-----------------------------------------------|
+| Framework      | Next.js 14 (App Router)                       |
+| Language       | TypeScript                                    |
+| Styling        | Tailwind CSS + shadcn/ui-style components     |
+| Theming        | next-themes (dark/light mode)                 |
+| Icons          | lucide-react                                  |
+| Database       | MongoDB (via official `mongodb` driver)       |
+| Auth           | bcryptjs (hashing) + jsonwebtoken (sessions)  |
+| AI             | OpenAI Chat Completions API                   |
+
+---
+
+## 🔒 Security Notes
+
+- Passwords are **never stored in plain text** — hashed with bcrypt (10 salt rounds) before saving.
+- Sessions use **httpOnly, sameSite=lax cookies** containing a signed JWT — not accessible from client-side JS.
+- All conversation and profile data is **scoped by `userId`** on every database query.
+- `middleware.ts` blocks unauthenticated access to `/chat`, `/persona`, and `/profile` at the edge, before the page even renders.
+
+---
+
+
+## Persona Characteristics
+
+### Hitesh Chaudhary
+
+* Energetic and conversational
+* Hinglish communication style
+* Project-first learning approach
+* Uses practical, real-world analogies
+* Focus on Web Development, JavaScript, React, Node.js, and DSA
+
+### Piyush Garg
+
+* Calm and structured teaching style
+* Step-by-step explanations
+* Backend-first mindset
+* Focus on Full Stack Development, Backend Systems, DevOps, and System Design
+
+---
+
+# Prompt Engineering
+
+The application continues to use the same prompt template:
+
+```text
+You are {persona.name}, {persona.description}.
+Stay in character and respond helpfully.
+```
+
+The differentiation comes from the persona description rather than modifying the underlying prompt structure.
+
+### Design Principles
+
+* Focus on teaching style instead of identity.
+* Keep responses within each mentor's technical expertise.
+* Differentiate personalities through tone and explanation style.
+* Avoid fabricated personal facts, opinions, or quotations.
+* Maintain character consistently throughout the conversation.
+
+---
+
+# Context Management
+
+Conversation handling remains unchanged from the original implementation.
+
+## Conversation Flow
+
+1. User selects a persona.
+2. Messages are stored in MongoDB.
+3. Previous conversation history is retrieved.
+4. The selected persona prompt is prepended.
+5. The latest user message is appended.
+6. The complete conversation is sent to the OpenAI API.
+
+Each conversation is permanently associated with its selected persona.
+
+If users want to compare responses from different mentors, they simply start separate conversations.
+
+## Storage
+
+Each conversation stores:
+
+* `userId`
+* `title`
+* `messages`
+* `createdAt`
+* `updatedAt`
+
+Messages are stored as:
+
+```ts
+{
+  role,
+  content,
+  createdAt
+}
+```
+
+Conversation history is grouped by:
+
+* Today
+* Yesterday
+* Last Week
+* Older
+
+---
+
+## Known Limitation
+
+Currently, the entire conversation history is sent with every request.
+
+While this preserves context, extremely long conversations may eventually approach the model's context window.
+
+Future improvements could include:
+
+* Context trimming
+* Conversation summarization
+* Retrieval-based memory
+
+---
+
+# Example Conversations
+
+## Hitesh Chaudhary Style
+
+**User**
+
+> I'm stuck between learning React and building projects with Vanilla JavaScript.
+
+**Assistant**
+
+> Haanji, pehle JavaScript ke fundamentals strong karo. DOM, events, fetch API — ye sab comfortably aana chahiye. Uske baad React seekho. Ek hi project pehle Vanilla JS mein banao, phir React mein rebuild karo. Tab samajh aayega React kis problem ko solve karta hai.
+
+---
+
+## Piyush Garg Style
+
+**User**
+
+> REST or GraphQL for a new backend?
+
+**Assistant**
+
+> Let's approach it step by step. REST is generally the simpler and more maintainable default. GraphQL becomes valuable when clients require flexible queries across multiple related resources. Unless you already have that requirement, I'd recommend starting with REST and introducing GraphQL only when it solves a real problem.

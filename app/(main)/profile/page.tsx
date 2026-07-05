@@ -28,7 +28,7 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4 text-center">
             <div className="rounded-md bg-secondary p-4">
-              <p className="text-2xl font-semibold text-primary">4</p>
+              <p className="text-2xl font-semibold text-primary">2</p>
               <p className="text-xs text-muted-foreground">Personas</p>
             </div>
             <div className="rounded-md bg-secondary p-4">
